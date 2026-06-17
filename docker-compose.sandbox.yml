@@ -1,0 +1,24 @@
+version: "3.9"
+
+services:
+  sandbox:
+    build:
+      context: ./sandbox-worker
+      dockerfile: Dockerfile
+    image: ccompiler-sandbox-worker
+    container_name: ccompiler-sandbox-worker
+    restart: unless-stopped
+    privileged: true # Required to run Docker inside container
+    environment:
+      - PORT=4001
+      - DOCKER_IMAGE=ccompiler-sandbox
+      - SANDBOX_TIMEOUT_MS=10000
+      - SANDBOX_MEMORY_MB=128
+      - SANDBOX_CPU_LIMIT=1.0
+      # - API_KEY=your-secret-api-key
+    ports:
+      - "4001:4001"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./docker:/docker:ro
+    command: sh -c "docker build -f /docker/Dockerfile.sandbox -t ccompiler-sandbox . && npm run dev"

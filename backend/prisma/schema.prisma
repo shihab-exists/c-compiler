@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  name          String?
+  avatar        String?
+  password      String?   // null for OAuth-only users
+  googleId      String?   @unique
+  emailVerified Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  projects      Project[]
+  snippets      Snippet[]
+  runs          Run[]
+  settings      UserSettings?
+
+  @@map("users")
+}
+
+model UserSettings {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme       String   @default("dark")
+  fontSize    Int      @default(14)
+  tabSize     Int      @default(4)
+  wordWrap    Boolean  @default(false)
+  minimap     Boolean  @default(true)
+  autoSave    Boolean  @default(true)
+  language    String   @default("c")
+  updatedAt   DateTime @updatedAt
+
+  @@map("user_settings")
+}
+
+model Project {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  language    String    @default("c")
+  sourceCode  String    @default("")
+  inputData   String    @default("")
+  isPublic    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  runs        Run[]
+  files       File[]
+
+  @@index([userId])
+  @@map("projects")
+}
+
+model File {
+  id        String   @id @default(uuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  content   String   @default("")
+  isMain    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@map("files")
+}
+
+model Snippet {
+  id          String   @id @default(uuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  title       String
+  category    String
+  description String?
+  code        String
+  isBuiltin   Boolean  @default(false)
+  usageCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@map("snippets")
+}
+
+model Run {
+  id            String   @id @default(uuid())
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  projectId     String?
+  project       Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  status        String   // success, error, warning, timeout
+  output        String?  @db.Text
+  errors        String?  @db.Text
+  warnings      String?  @db.Text
+  executionTime Int?     // ms
+  memoryUsage   Int?     // KB
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([projectId])
+  @@map("runs")
+}

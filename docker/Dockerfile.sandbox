@@ -1,0 +1,8 @@
+FROM alpine:3.18
+
+RUN apk add --no-cache gcc libc-dev coreutils
+
+WORKDIR /sandbox
+
+# Default entrypoint runs the compile+execute script mounted from host
+CMD ["sh", "/sandbox/run.sh"]
